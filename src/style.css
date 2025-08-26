@@ -26,32 +26,28 @@
            border-2 border-blue-400 relative overflow-hidden;
   }
   
-  .number-card.used {
-    @apply opacity-50 cursor-not-allowed bg-gradient-to-br from-gray-400 to-gray-500 
-           border-gray-300 transform scale-95;
-  }
-  
   .number-card.selected {
     @apply bg-gradient-to-br from-yellow-400 to-yellow-500 
-           border-yellow-300 shadow-xl transform scale-110;
+           border-yellow-300 shadow-xl transform scale-110 ring-4 ring-yellow-200;
   }
   
-  .number-card.next {
-    @apply bg-gradient-to-br from-green-500 to-green-600 
-           border-green-400 shadow-xl animate-pulse;
+  .number-card.result {
+    @apply bg-gradient-to-br from-purple-500 to-purple-600 
+           border-purple-400 shadow-xl;
   }
   
   .card-inner {
-    @apply relative w-full h-full flex items-center justify-center;
+    @apply relative w-full h-full flex flex-col items-center justify-center p-2;
   }
   
   .card-number {
     @apply text-2xl font-bold;
   }
   
-  .card-used {
-    @apply absolute top-1 right-1 text-xs bg-white text-green-600 
-           rounded-full w-5 h-5 flex items-center justify-center font-bold;
+  .card-expression {
+    @apply text-xs text-white/80 mt-1 text-center leading-tight;
+    font-size: 0.6rem;
+    line-height: 0.8rem;
   }
   
   /* Operator Cards */
@@ -104,8 +100,18 @@
     50% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.8); }
   }
   
+  @keyframes cardMerge {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+  }
+  
   .card-glow {
     animation: cardGlow 2s ease-in-out infinite;
+  }
+  
+  .card-merge {
+    animation: cardMerge 0.5s ease-in-out;
   }
   
   /* Responsive Design */
@@ -120,6 +126,11 @@
     
     .action-button {
       @apply px-4 py-3 text-sm;
+    }
+    
+    .card-expression {
+      font-size: 0.5rem;
+      line-height: 0.7rem;
     }
   }
   
@@ -143,5 +154,12 @@
   
   .success-animation {
     animation: successPulse 0.5s ease-in-out;
+  }
+  
+  /* Card selection indicator */
+  .selection-indicator {
+    @apply absolute -top-2 -right-2 w-6 h-6 bg-yellow-400 
+           rounded-full flex items-center justify-center text-white 
+           font-bold text-sm shadow-lg;
   }
 }

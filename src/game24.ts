@@ -1,17 +1,21 @@
 import { Solver24 } from './solver24'
 
+interface Card {
+  value: number
+  expression: string
+  isResult: boolean
+}
+
 export class Game24 {
   private numbers: number[] = []
-  private selectedNumbers: number[] = []
-  private operators: string[] = []
-  private expression: string = ''
+  private cards: Card[] = []
+  private selectedCards: number[] = []
   private score: number = 0
   private timeElapsed: number = 0
   private gameStartTime: number = 0
   private isGameActive: boolean = false
   private solver: Solver24
-  private currentStep: 'number' | 'operator' = 'number'
-  private lastSelectedNumber: number | null = null
+  private currentStep: 'card' | 'operator' = 'card'
 
   constructor() {
     this.solver = new Solver24()
@@ -33,7 +37,7 @@ export class Game24 {
           <!-- Header -->
           <div class="text-center mb-8">
             <h1 class="text-4xl font-bold text-gray-800 mb-2">Number Solver</h1>
-            <p class="text-gray-600 text-lg">Use all 4 numbers to make 24</p>
+            <p class="text-gray-600 text-lg">Combine cards to make 24</p>
           </div>
 
           <!-- Stats Bar -->
@@ -52,14 +56,9 @@ export class Game24 {
             </div>
           </div>
 
-          <!-- Numbers Display (Card Format) -->
-          <div class="grid grid-cols-4 gap-4 mb-8" id="numbers-container">
-            <!-- Numbers will be inserted here as cards -->
-          </div>
-
-          <!-- Expression Display -->
-          <div class="bg-gray-100 rounded-xl p-6 mb-8 min-h-[80px] flex items-center justify-center border-2 border-gray-200">
-            <span id="expression" class="text-2xl font-mono text-gray-800">Click a number to start</span>
+          <!-- Cards Display -->
+          <div class="flex flex-wrap justify-center gap-4 mb-8" id="cards-container">
+            <!-- Cards will be inserted here -->
           </div>
 
           <!-- Operators (Card Format) -->
@@ -73,10 +72,10 @@ export class Game24 {
           <!-- Action Buttons -->
           <div class="grid grid-cols-2 gap-4">
             <button id="clear-btn" class="action-button danger-button">
-              <span class="text-lg">🔄 Clear</span>
+              <span class="text-lg">🔄 New Game</span>
             </button>
-            <button id="new-game-btn" class="action-button primary-button">
-              <span class="text-lg">🎯 New Game</span>
+            <button id="hint-btn" class="action-button primary-button">
+              <span class="text-lg">💡 Hint</span>
             </button>
           </div>
 
@@ -87,8 +86,7 @@ export class Game24 {
           <div class="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-200">
             <h3 class="font-semibold text-blue-800 mb-2">How to Play:</h3>
             <p class="text-blue-700 text-sm">
-              Click a number, then an operator, then another number to perform calculations. 
-              Use all four numbers exactly once to make 24 and earn the gold card!
+              Click two cards, then an operator to combine them. Keep combining until you have one card with value 24!
             </p>
           </div>
         </div>
@@ -108,13 +106,12 @@ export class Game24 {
     })
 
     // Action buttons
-    document.getElementById('clear-btn')?.addEventListener('click', () => this.clearExpression())
-    document.getElementById('new-game-btn')?.addEventListener('click', () => this.newGame())
+    document.getElementById('clear-btn')?.addEventListener('click', () => this.newGame())
+    document.getElementById('hint-btn')?.addEventListener('click', () => this.showHint())
   }
 
   private newGame(): void {
     this.generateNumbers()
-    this.clearExpression()
     this.isGameActive = true
     this.gameStartTime = Date.now()
     this.updateUI()
@@ -132,112 +129,149 @@ export class Game24 {
     if (!this.solver.hasSolution(this.numbers)) {
       this.numbers = [4, 6, 8, 1] // Known solvable
     }
+
+    // Initialize cards
+    this.cards = this.numbers.map(num => ({
+      value: num,
+      expression: num.toString(),
+      isResult: false
+    }))
   }
 
-  private clearExpression(): void {
-    this.selectedNumbers = []
-    this.operators = []
-    this.expression = ''
-    this.currentStep = 'number'
-    this.lastSelectedNumber = null
+  private selectCard(index: number): void {
+    if (this.currentStep !== 'card') return
+    
+    // Toggle selection
+    const cardIndex = this.selectedCards.indexOf(index)
+    if (cardIndex > -1) {
+      this.selectedCards.splice(cardIndex, 1)
+    } else {
+      if (this.selectedCards.length < 2) {
+        this.selectedCards.push(index)
+      }
+    }
+    
     this.updateUI()
-    this.hideResult()
   }
 
   private addOperator(op: string): void {
-    if (this.currentStep !== 'operator' || this.selectedNumbers.length === 0) return
+    if (this.selectedCards.length !== 2) return
     
-    this.operators.push(op)
-    this.expression += ` ${op} `
-    this.currentStep = 'number'
-    this.updateUI()
-  }
-
-  selectNumber(index: number): void {
-    if (this.currentStep !== 'number' || this.selectedNumbers.length >= 4) return
+    const [index1, index2] = this.selectedCards
+    const card1 = this.cards[index1]
+    const card2 = this.cards[index2]
     
-    const number = this.numbers[index]
-    
-    // Check if this number was already used
-    if (this.selectedNumbers.includes(number)) return
-    
-    this.selectedNumbers.push(number)
-    this.expression += number
-    this.lastSelectedNumber = index
-    this.currentStep = 'operator'
-    
-    // Check if we have a complete expression
-    if (this.selectedNumbers.length === 4 && this.operators.length === 3) {
-      this.evaluateExpression()
-    }
-    
-    this.updateUI()
-  }
-
-  private evaluateExpression(): void {
     try {
-      const result = eval(this.expression)
-      if (Math.abs(result - 24) < 0.001) {
+      let result: number
+      let expression: string
+      
+      switch (op) {
+        case '+':
+          result = card1.value + card2.value
+          expression = `(${card1.expression} + ${card2.expression})`
+          break
+        case '-':
+          result = card1.value - card2.value
+          expression = `(${card1.expression} - ${card2.expression})`
+          break
+        case '*':
+          result = card1.value * card2.value
+          expression = `(${card1.expression} × ${card2.expression})`
+          break
+        case '/':
+          if (card2.value === 0) {
+            this.showResult('❌ Cannot divide by zero!', 'error')
+            return
+          }
+          result = card1.value / card2.value
+          expression = `(${card1.expression} ÷ ${card2.expression})`
+          break
+        default:
+          return
+      }
+      
+      // Create new result card
+      const resultCard: Card = {
+        value: result,
+        expression: expression,
+        isResult: true
+      }
+      
+      // Remove the two selected cards and add the result
+      this.cards = this.cards.filter((_, i) => !this.selectedCards.includes(i))
+      this.cards.push(resultCard)
+      
+      // Clear selection
+      this.selectedCards = []
+      
+      // Check for win condition
+      if (this.cards.length === 1 && Math.abs(this.cards[0].value - 24) < 0.001) {
         this.showResult('🎉 GOLD CARD! You solved it! 🏆', 'success')
         this.score += 100
         setTimeout(() => this.newGame(), 3000)
-      } else {
-        this.showResult(`❌ ${this.expression} = ${result}, not 24`, 'error')
-        setTimeout(() => this.clearExpression(), 2000)
+      } else if (this.cards.length === 1 && Math.abs(this.cards[0].value - 24) >= 0.001) {
+        this.showResult(`❌ Final result: ${this.cards[0].value}, not 24`, 'error')
+        setTimeout(() => this.newGame(), 2000)
       }
+      
+      this.updateUI()
+      
     } catch (error) {
-      this.showResult('❌ Invalid expression', 'error')
-      setTimeout(() => this.clearExpression(), 2000)
+      this.showResult('❌ Invalid operation', 'error')
     }
   }
 
-  private showResult(message: string, type: 'success' | 'error'): void {
+  private showHint(): void {
+    const solution = this.solver.getSolution(this.numbers)
+    if (solution) {
+      this.showResult(`💡 Hint: ${solution}`, 'hint')
+    } else {
+      this.showResult('💡 No hint available', 'hint')
+    }
+  }
+
+  private showResult(message: string, type: 'success' | 'error' | 'hint'): void {
     const resultEl = document.getElementById('result-message')
     if (resultEl) {
       resultEl.textContent = message
-      resultEl.className = `mt-6 text-center font-semibold text-lg ${type === 'success' ? 'text-green-600 bg-green-100 p-4 rounded-lg' : 'text-red-600 bg-red-100 p-4 rounded-lg'}`
+      let bgColor = 'bg-blue-100'
+      let textColor = 'text-blue-600'
+      
+      if (type === 'success') {
+        bgColor = 'bg-green-100'
+        textColor = 'text-green-600'
+      } else if (type === 'error') {
+        bgColor = 'bg-red-100'
+        textColor = 'text-red-600'
+      }
+      
+      resultEl.className = `mt-6 text-center font-semibold text-lg ${textColor} ${bgColor} p-4 rounded-lg`
       resultEl.classList.remove('hidden')
     }
   }
 
-  private hideResult(): void {
-    const resultEl = document.getElementById('result-message')
-    if (resultEl) {
-      resultEl.classList.add('hidden')
-    }
-  }
-
   private updateUI(): void {
-    // Update numbers display as cards
-    const numbersContainer = document.getElementById('numbers-container')
-    if (numbersContainer) {
-      numbersContainer.innerHTML = this.numbers.map((num, index) => {
-        const isUsed = this.selectedNumbers.includes(num)
-        const isSelected = this.lastSelectedNumber === index
-        const isNext = this.currentStep === 'number' && !isUsed
+    // Update cards display
+    const cardsContainer = document.getElementById('cards-container')
+    if (cardsContainer) {
+      cardsContainer.innerHTML = this.cards.map((card, index) => {
+        const isSelected = this.selectedCards.includes(index)
+        const isResult = card.isResult
         
         let cardClass = 'number-card'
-        if (isUsed) cardClass += ' used'
         if (isSelected) cardClass += ' selected'
-        if (isNext) cardClass += ' next'
+        if (isResult) cardClass += ' result'
         
         return `
           <button class="${cardClass}" 
-                  onclick="window.game24.selectNumber(${index})" 
-                  ${isUsed ? 'disabled' : ''}>
+                  onclick="window.game24.selectCard(${index})">
             <div class="card-inner">
-              <span class="card-number">${num}</span>
-              ${isUsed ? '<div class="card-used">✓</div>' : ''}
+              <span class="card-number">${card.value}</span>
+              ${isResult ? '<div class="card-expression">' + card.expression + '</div>' : ''}
             </div>
           </button>
         `
       }).join('')
-    }
-
-    // Update expression
-    const expressionEl = document.getElementById('expression')
-    if (expressionEl) {
-      expressionEl.textContent = this.expression || 'Click a number to start'
     }
 
     // Update score
