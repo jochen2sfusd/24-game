@@ -117,10 +117,11 @@ export class Game24 {
   private newGame(): void {
     this.generateNumbers()
     this.isGameActive = true
-    this.roundStartTime = Date.now() // Reset round timer only
+    this.gameStartTime = Date.now() // Reset total timer
+    this.roundStartTime = Date.now() // Reset round timer
     this.selectedCard = null
     this.pendingOperation = null
-    this.score = 0 // Reset streak to 0
+    this.score = 0 // Reset streak to 0 only when new game button is pressed
     this.level = 0
     this.updateUI()
   }
@@ -135,7 +136,7 @@ export class Game24 {
     }))
     this.selectedCard = null
     this.pendingOperation = null
-    this.roundStartTime = Date.now() // Reset round timer
+    this.roundStartTime = Date.now() // Reset round timer only
     this.updateUI()
   }
 
@@ -257,16 +258,25 @@ export class Game24 {
   private handleWin(): void {
     this.score += 1 // 1 point per round instead of 100
     this.level = this.score // Level equals score now
-    // Auto-start new game after a brief delay
-    setTimeout(() => this.newGame(), 1000)
+    // Auto-start new round after a brief delay (keep streak)
+    setTimeout(() => this.startNewRound(), 1000)
   }
 
   private handleLoss(): void {
     // Reset score on loss (streak-based scoring)
     this.score = 0
     this.level = 0
-    // Auto-start new game after a brief delay
-    setTimeout(() => this.newGame(), 1000)
+    // Auto-start new round after a brief delay
+    setTimeout(() => this.startNewRound(), 1000)
+  }
+
+  private startNewRound(): void {
+    // Start a new round with new numbers but keep the streak
+    this.generateNumbers()
+    this.roundStartTime = Date.now() // Reset round timer only
+    this.selectedCard = null
+    this.pendingOperation = null
+    this.updateUI()
   }
 
   private resetSelection(): void {
