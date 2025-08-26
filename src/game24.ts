@@ -6,16 +6,26 @@ interface Card {
   isResult: boolean
 }
 
+interface GameHistory {
+  cards: Card[]
+  selectedCard: number | null
+  pendingOperation: string | null
+}
+
 export class Game24 {
   private numbers: number[] = []
   private cards: Card[] = []
   private selectedCard: number | null = null
   private pendingOperation: string | null = null
   private score: number = 0
-  private timeElapsed: number = 0
+  private level: number = 1
+  private totalTimeElapsed: number = 0
+  private roundTimeElapsed: number = 0
   private gameStartTime: number = 0
+  private roundStartTime: number = 0
   private isGameActive: boolean = false
   private solver: Solver24
+  private gameHistory: GameHistory[] = []
 
   constructor() {
     this.solver = new Solver24()
@@ -32,62 +42,66 @@ export class Game24 {
     if (!root) return
 
     root.innerHTML = `
-      <div class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900">
-        <div class="game-card max-w-2xl w-full bg-white/95 backdrop-blur-sm">
-          <!-- Header -->
-          <div class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-gray-800 mb-2">Number Solver</h1>
-            <p class="text-gray-600 text-lg">Combine cards to make 24</p>
+      <div class="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 p-4">
+        <div class="max-w-md mx-auto">
+          <!-- Header Section -->
+          <div class="flex items-center justify-between mb-6">
+            <!-- Left Icons -->
+            <div class="flex flex-col gap-2">
+              <button class="header-icon">🏠</button>
+              <button class="header-icon">🏁</button>
+            </div>
+            
+            <!-- Center - Streak -->
+            <div class="text-center">
+              <div class="text-white text-lg font-semibold">Streak</div>
+              <div class="bg-gray-800 rounded-lg px-4 py-2 mt-1">
+                <div class="text-white text-2xl font-bold">${this.score}</div>
+                <div class="flex justify-center mt-1">
+                  <span class="star">⭐</span>
+                  <span class="star">⭐</span>
+                  <span class="star">⭐</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Right - Undo Button -->
+            <button id="undo-btn" class="header-icon text-2xl">↶</button>
           </div>
 
-          <!-- Stats Bar -->
-          <div class="flex justify-between items-center mb-8 text-sm">
-            <div class="bg-blue-100 px-4 py-2 rounded-lg">
-              <span class="font-semibold text-blue-800">Score: </span>
-              <span id="score" class="text-blue-600 font-bold text-lg">0</span>
-            </div>
-            <div class="bg-green-100 px-4 py-2 rounded-lg">
-              <span class="font-semibold text-green-800">Time: </span>
-              <span id="timer" class="text-green-600 font-bold text-lg">0:00</span>
-            </div>
-            <div class="bg-purple-100 px-4 py-2 rounded-lg">
-              <span class="font-semibold text-purple-800">Level: </span>
-              <span id="level" class="text-purple-600 font-bold text-lg">1</span>
-            </div>
-          </div>
-
-          <!-- Cards Display -->
-          <div class="flex flex-wrap justify-center gap-4 mb-8" id="cards-container">
+          <!-- Game Board Section -->
+          <div class="grid grid-cols-2 gap-4 mb-6" id="cards-container">
             <!-- Cards will be inserted here -->
           </div>
 
-          <!-- Operators (Card Format) -->
-          <div class="grid grid-cols-4 gap-3 mb-8" id="operators-container">
-            <button class="operator-card" data-op="+">+</button>
-            <button class="operator-card" data-op="-">−</button>
-            <button class="operator-card" data-op="*">×</button>
-            <button class="operator-card" data-op="/">÷</button>
+          <!-- Operator Section -->
+          <div class="flex justify-center gap-4" id="operators-container">
+            <button class="operator-btn plus" data-op="+">+</button>
+            <button class="operator-btn minus" data-op="-">−</button>
+            <button class="operator-btn multiply" data-op="*">×</button>
+            <button class="operator-btn divide" data-op="/">÷</button>
+          </div>
+
+          <!-- Timer Section -->
+          <div class="flex justify-between items-center mt-6 text-white">
+            <div class="text-center">
+              <div class="text-sm opacity-80">Total Time</div>
+              <div id="total-timer" class="text-lg font-bold">0:00</div>
+            </div>
+            <div class="text-center">
+              <div class="text-sm opacity-80">Round Time</div>
+              <div id="round-timer" class="text-lg font-bold">0:00</div>
+            </div>
           </div>
 
           <!-- Action Buttons -->
-          <div class="grid grid-cols-2 gap-4">
-            <button id="clear-btn" class="action-button danger-button">
-              <span class="text-lg">🔄 New Game</span>
+          <div class="flex gap-4 mt-6">
+            <button id="new-game-btn" class="action-btn danger">
+              <span>🔄 New Game</span>
             </button>
-            <button id="hint-btn" class="action-button primary-button">
-              <span class="text-lg">💡 Hint</span>
+            <button id="hint-btn" class="action-btn primary">
+              <span>💡 Hint</span>
             </button>
-          </div>
-
-          <!-- Result Message -->
-          <div id="result-message" class="mt-6 text-center font-semibold hidden"></div>
-
-          <!-- Instructions -->
-          <div class="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <h3 class="font-semibold text-blue-800 mb-2">How to Play:</h3>
-            <p class="text-blue-700 text-sm">
-              Click a number, then an operator, then another number to combine them. Keep combining until you have one card with value 24!
-            </p>
           </div>
         </div>
       </div>
@@ -106,7 +120,8 @@ export class Game24 {
     })
 
     // Action buttons
-    document.getElementById('clear-btn')?.addEventListener('click', () => this.newGame())
+    document.getElementById('undo-btn')?.addEventListener('click', () => this.undoLastOperation())
+    document.getElementById('new-game-btn')?.addEventListener('click', () => this.newGame())
     document.getElementById('hint-btn')?.addEventListener('click', () => this.showHint())
   }
 
@@ -114,8 +129,10 @@ export class Game24 {
     this.generateNumbers()
     this.isGameActive = true
     this.gameStartTime = Date.now()
+    this.roundStartTime = Date.now()
     this.selectedCard = null
     this.pendingOperation = null
+    this.gameHistory = []
     this.updateUI()
   }
 
@@ -140,6 +157,26 @@ export class Game24 {
     }))
   }
 
+  private saveGameState(): void {
+    this.gameHistory.push({
+      cards: JSON.parse(JSON.stringify(this.cards)),
+      selectedCard: this.selectedCard,
+      pendingOperation: this.pendingOperation
+    })
+  }
+
+  private undoLastOperation(): void {
+    if (this.gameHistory.length === 0) return
+    
+    const lastState = this.gameHistory.pop()
+    if (lastState) {
+      this.cards = lastState.cards
+      this.selectedCard = lastState.selectedCard
+      this.pendingOperation = lastState.pendingOperation
+      this.updateUI()
+    }
+  }
+
   private selectCard(index: number): void {
     // If we have a pending operation, this is the second number
     if (this.pendingOperation !== null) {
@@ -161,6 +198,9 @@ export class Game24 {
 
   private performOperation(secondCardIndex: number): void {
     if (this.selectedCard === null || this.pendingOperation === null) return
+    
+    // Save state before operation
+    this.saveGameState()
     
     const firstCard = this.cards[this.selectedCard]
     const secondCard = this.cards[secondCardIndex]
@@ -212,12 +252,9 @@ export class Game24 {
       
       // Check for win condition
       if (this.cards.length === 1 && Math.abs(this.cards[0].value - 24) < 0.001) {
-        this.showResult('🎉 GOLD CARD! You solved it! 🏆', 'success')
-        this.score += 100
-        setTimeout(() => this.newGame(), 3000)
+        this.handleWin()
       } else if (this.cards.length === 1 && Math.abs(this.cards[0].value - 24) >= 0.001) {
-        this.showResult(`❌ Final result: ${this.cards[0].value}, not 24`, 'error')
-        setTimeout(() => this.newGame(), 2000)
+        this.handleLoss()
       }
       
       this.updateUI()
@@ -226,6 +263,38 @@ export class Game24 {
       this.showResult('❌ Invalid operation', 'error')
       this.resetSelection()
     }
+  }
+
+  private handleWin(): void {
+    this.score += 100
+    this.level = Math.floor(this.score / 100) + 1
+    this.updateStars()
+    // Auto-start new game after a brief delay
+    setTimeout(() => this.newGame(), 1000)
+  }
+
+  private handleLoss(): void {
+    // Reset score on loss (streak-based scoring)
+    this.score = 0
+    this.level = 1
+    this.updateStars()
+    // Auto-start new game after a brief delay
+    setTimeout(() => this.newGame(), 1000)
+  }
+
+  private updateStars(): void {
+    const stars = document.querySelectorAll('.star')
+    const starCount = Math.min(3, Math.floor(this.score / 100))
+    
+    stars.forEach((star, index) => {
+      if (index < starCount) {
+        star.textContent = '⭐'
+        star.classList.add('text-yellow-400')
+      } else {
+        star.textContent = '☆'
+        star.classList.remove('text-yellow-400')
+      }
+    })
   }
 
   private resetSelection(): void {
@@ -237,30 +306,28 @@ export class Game24 {
   private showHint(): void {
     const solution = this.solver.getSolution(this.numbers)
     if (solution) {
-      this.showResult(`💡 Hint: ${solution}`, 'hint')
+      // Show hint as a temporary overlay
+      this.showTemporaryMessage(`💡 Hint: ${solution}`)
     } else {
-      this.showResult('💡 No hint available', 'hint')
+      this.showTemporaryMessage('💡 No hint available')
     }
   }
 
+  private showTemporaryMessage(message: string): void {
+    // Create temporary message element
+    const messageEl = document.createElement('div')
+    messageEl.textContent = message
+    messageEl.className = 'fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-blue-600 text-white px-4 py-2 rounded-lg z-50'
+    document.body.appendChild(messageEl)
+    
+    // Remove after 3 seconds
+    setTimeout(() => {
+      document.body.removeChild(messageEl)
+    }, 3000)
+  }
+
   private showResult(message: string, type: 'success' | 'error' | 'hint'): void {
-    const resultEl = document.getElementById('result-message')
-    if (resultEl) {
-      resultEl.textContent = message
-      let bgColor = 'bg-blue-100'
-      let textColor = 'text-blue-600'
-      
-      if (type === 'success') {
-        bgColor = 'bg-green-100'
-        textColor = 'text-green-600'
-      } else if (type === 'error') {
-        bgColor = 'bg-red-100'
-        textColor = 'text-red-600'
-      }
-      
-      resultEl.className = `mt-6 text-center font-semibold text-lg ${textColor} ${bgColor} p-4 rounded-lg`
-      resultEl.classList.remove('hidden')
-    }
+    this.showTemporaryMessage(message)
   }
 
   private updateUI(): void {
@@ -272,7 +339,7 @@ export class Game24 {
         const isResult = card.isResult
         const isPending = this.pendingOperation !== null && this.selectedCard === index
         
-        let cardClass = 'number-card'
+        let cardClass = 'game-card'
         if (isSelected) cardClass += ' selected'
         if (isResult) cardClass += ' result'
         if (isPending) cardClass += ' pending'
@@ -280,7 +347,7 @@ export class Game24 {
         return `
           <button class="${cardClass}" 
                   onclick="window.game24.selectCard(${index})">
-            <div class="card-inner">
+            <div class="card-content">
               <span class="card-number">${card.value}</span>
               ${isResult ? '<div class="card-expression">' + card.expression + '</div>' : ''}
             </div>
@@ -299,29 +366,38 @@ export class Game24 {
       }
     })
 
-    // Update score
-    const scoreEl = document.getElementById('score')
-    if (scoreEl) {
-      scoreEl.textContent = this.score.toString()
+    // Update score display
+    const scoreDisplay = document.querySelector('.text-2xl')
+    if (scoreDisplay) {
+      scoreDisplay.textContent = this.score.toString()
     }
 
-    // Update level (based on score)
-    const levelEl = document.getElementById('level')
-    if (levelEl) {
-      const level = Math.floor(this.score / 100) + 1
-      levelEl.textContent = level.toString()
+    // Update undo button state
+    const undoBtn = document.getElementById('undo-btn')
+    if (undoBtn) {
+      undoBtn.classList.toggle('disabled', this.gameHistory.length === 0)
     }
   }
 
   private startTimer(): void {
     setInterval(() => {
       if (this.isGameActive) {
-        this.timeElapsed = Math.floor((Date.now() - this.gameStartTime) / 1000)
-        const minutes = Math.floor(this.timeElapsed / 60)
-        const seconds = this.timeElapsed % 60
-        const timerEl = document.getElementById('timer')
-        if (timerEl) {
-          timerEl.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`
+        this.totalTimeElapsed = Math.floor((Date.now() - this.gameStartTime) / 1000)
+        this.roundTimeElapsed = Math.floor((Date.now() - this.roundStartTime) / 1000)
+        
+        const totalMinutes = Math.floor(this.totalTimeElapsed / 60)
+        const totalSeconds = this.totalTimeElapsed % 60
+        const roundMinutes = Math.floor(this.roundTimeElapsed / 60)
+        const roundSeconds = this.roundTimeElapsed % 60
+        
+        const totalTimerEl = document.getElementById('total-timer')
+        const roundTimerEl = document.getElementById('round-timer')
+        
+        if (totalTimerEl) {
+          totalTimerEl.textContent = `${totalMinutes}:${totalSeconds.toString().padStart(2, '0')}`
+        }
+        if (roundTimerEl) {
+          roundTimerEl.textContent = `${roundMinutes}:${roundSeconds.toString().padStart(2, '0')}`
         }
       }
     }, 1000)

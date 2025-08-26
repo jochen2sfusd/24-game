@@ -13,90 +13,96 @@
 }
 
 @layer components {
+  /* Header Icons */
+  .header-icon {
+    @apply w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center 
+           text-white text-lg hover:bg-gray-700 transition-colors duration-200
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
+  /* Game Cards - Red squares like in the image */
   .game-card {
-    @apply bg-white rounded-2xl shadow-2xl p-6 backdrop-blur-sm;
+    @apply w-24 h-24 bg-red-500 rounded-lg text-white font-bold text-3xl 
+           shadow-lg hover:shadow-xl transition-all duration-300 
+           transform hover:scale-105 active:scale-95 cursor-pointer 
+           flex items-center justify-center border-2 border-red-400;
   }
   
-  /* Number Cards - Similar to Coolmath Games */
-  .number-card {
-    @apply w-20 h-24 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 
-           text-white font-bold text-2xl shadow-lg hover:shadow-xl 
-           transition-all duration-300 transform hover:scale-105 
-           active:scale-95 cursor-pointer flex items-center justify-center
-           border-2 border-blue-400 relative overflow-hidden;
+  .game-card.selected {
+    @apply bg-red-400 border-red-300 shadow-xl transform scale-110 
+           ring-4 ring-red-200;
   }
   
-  .number-card.selected {
-    @apply bg-gradient-to-br from-yellow-400 to-yellow-500 
-           border-yellow-300 shadow-xl transform scale-110 ring-4 ring-yellow-200;
+  .game-card.pending {
+    @apply bg-orange-500 border-orange-400 shadow-xl transform scale-110 
+           ring-4 ring-orange-200 animate-pulse;
   }
   
-  .number-card.pending {
-    @apply bg-gradient-to-br from-orange-400 to-orange-500 
-           border-orange-300 shadow-xl transform scale-110 ring-4 ring-orange-200 animate-pulse;
+  .game-card.result {
+    @apply bg-purple-500 border-purple-400 shadow-xl;
   }
   
-  .number-card.result {
-    @apply bg-gradient-to-br from-purple-500 to-purple-600 
-           border-purple-400 shadow-xl;
-  }
-  
-  .card-inner {
+  .card-content {
     @apply relative w-full h-full flex flex-col items-center justify-center p-2;
   }
   
   .card-number {
-    @apply text-2xl font-bold;
+    @apply text-3xl font-bold;
   }
   
   .card-expression {
     @apply text-xs text-white/80 mt-1 text-center leading-tight;
-    font-size: 0.6rem;
-    line-height: 0.8rem;
+    font-size: 0.5rem;
+    line-height: 0.7rem;
   }
   
-  /* Operator Cards */
-  .operator-card {
-    @apply w-16 h-16 rounded-xl bg-gradient-to-br from-green-500 to-green-600 
-           text-white font-bold text-xl shadow-lg hover:shadow-xl 
-           transition-all duration-300 transform hover:scale-105 
-           active:scale-95 cursor-pointer flex items-center justify-center
-           border-2 border-green-400;
+  /* Operator Buttons - Colored circles like in the image */
+  .operator-btn {
+    @apply w-16 h-16 rounded-full text-white font-bold text-2xl 
+           shadow-lg hover:shadow-xl transition-all duration-300 
+           transform hover:scale-105 active:scale-95 cursor-pointer 
+           flex items-center justify-center border-2;
   }
   
-  .operator-card:hover {
-    @apply bg-gradient-to-br from-green-400 to-green-500;
+  .operator-btn.plus {
+    @apply bg-yellow-500 border-yellow-400 hover:bg-yellow-400;
   }
   
-  .operator-card:active {
-    @apply transform scale-95;
+  .operator-btn.minus {
+    @apply bg-blue-500 border-blue-400 hover:bg-blue-400;
   }
   
-  .operator-card.selected {
-    @apply bg-gradient-to-br from-orange-400 to-orange-500 
-           border-orange-300 shadow-xl transform scale-110 ring-4 ring-orange-200;
+  .operator-btn.multiply {
+    @apply bg-orange-500 border-orange-400 hover:bg-orange-400;
+  }
+  
+  .operator-btn.divide {
+    @apply bg-green-500 border-green-400 hover:bg-green-400;
+  }
+  
+  .operator-btn.selected {
+    @apply transform scale-110 ring-4 ring-white/30;
   }
   
   /* Action Buttons */
-  .action-button {
-    @apply px-6 py-4 rounded-xl font-semibold text-white shadow-lg 
-           hover:shadow-xl transition-all duration-300 transform hover:scale-105 
-           active:scale-95 cursor-pointer border-2;
+  .action-btn {
+    @apply flex-1 px-4 py-3 rounded-lg font-semibold text-white 
+           shadow-lg hover:shadow-xl transition-all duration-300 
+           transform hover:scale-105 active:scale-95 cursor-pointer 
+           border-2 text-center;
   }
   
-  .primary-button {
-    @apply action-button bg-gradient-to-r from-blue-500 to-blue-600 
-           border-blue-400 hover:from-blue-400 hover:to-blue-500;
+  .action-btn.primary {
+    @apply bg-blue-500 border-blue-400 hover:bg-blue-400;
   }
   
-  .success-button {
-    @apply action-button bg-gradient-to-r from-green-500 to-green-600 
-           border-green-400 hover:from-green-400 hover:to-green-500;
+  .action-btn.danger {
+    @apply bg-red-500 border-red-400 hover:bg-red-400;
   }
   
-  .danger-button {
-    @apply action-button bg-gradient-to-r from-red-500 to-red-600 
-           border-red-400 hover:from-red-400 hover:to-red-500;
+  /* Stars */
+  .star {
+    @apply text-white text-sm mx-1;
   }
   
   /* Animations */
@@ -106,8 +112,8 @@
   }
   
   @keyframes cardGlow {
-    0%, 100% { box-shadow: 0 0 5px rgba(59, 130, 246, 0.5); }
-    50% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.8); }
+    0%, 100% { box-shadow: 0 0 5px rgba(239, 68, 68, 0.5); }
+    50% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.8); }
   }
   
   @keyframes cardMerge {
@@ -126,33 +132,26 @@
   
   /* Responsive Design */
   @media (max-width: 640px) {
-    .number-card {
-      @apply w-16 h-20 text-xl;
+    .game-card {
+      @apply w-20 h-20 text-2xl;
     }
     
-    .operator-card {
-      @apply w-14 h-14 text-lg;
+    .operator-btn {
+      @apply w-14 h-14 text-xl;
     }
     
-    .action-button {
-      @apply px-4 py-3 text-sm;
+    .action-btn {
+      @apply px-3 py-2 text-sm;
     }
     
     .card-expression {
-      font-size: 0.5rem;
-      line-height: 0.7rem;
+      font-size: 0.4rem;
+      line-height: 0.6rem;
     }
-  }
-  
-  /* Game-specific styles */
-  .expression-display {
-    @apply bg-gradient-to-r from-gray-50 to-gray-100 
-           border-2 border-gray-200 shadow-inner;
-  }
-  
-  .stats-card {
-    @apply bg-gradient-to-r from-blue-50 to-blue-100 
-           border border-blue-200 shadow-sm;
+    
+    .header-icon {
+      @apply w-8 h-8 text-base;
+    }
   }
   
   /* Success animation */
@@ -164,12 +163,5 @@
   
   .success-animation {
     animation: successPulse 0.5s ease-in-out;
-  }
-  
-  /* Card selection indicator */
-  .selection-indicator {
-    @apply absolute -top-2 -right-2 w-6 h-6 bg-yellow-400 
-           rounded-full flex items-center justify-center text-white 
-           font-bold text-sm shadow-lg;
   }
 }
