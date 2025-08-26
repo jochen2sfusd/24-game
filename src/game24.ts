@@ -7,12 +7,6 @@ interface Card {
   position: number // Track original position
 }
 
-interface GameHistory {
-  cards: Card[]
-  selectedCard: number | null
-  pendingOperation: string | null
-}
-
 export class Game24 {
   private numbers: number[] = []
   private cards: Card[] = []
@@ -26,7 +20,6 @@ export class Game24 {
   private roundStartTime: number = 0
   private isGameActive: boolean = false
   private solver: Solver24
-  private gameHistory: GameHistory[] = []
 
   constructor() {
     this.solver = new Solver24()
@@ -61,8 +54,8 @@ export class Game24 {
               </div>
             </div>
             
-            <!-- Right - Undo Button -->
-            <button id="undo-btn" class="header-icon text-2xl">↶</button>
+            <!-- Right - Reset Button -->
+            <button id="reset-btn" class="header-icon text-2xl">↻</button>
           </div>
 
           <!-- Game Board Section - Fixed 2x2 grid -->
@@ -116,7 +109,7 @@ export class Game24 {
     })
 
     // Action buttons
-    document.getElementById('undo-btn')?.addEventListener('click', () => this.undoLastOperation())
+    document.getElementById('reset-btn')?.addEventListener('click', () => this.resetRound())
     document.getElementById('new-game-btn')?.addEventListener('click', () => this.newGame())
     document.getElementById('hint-btn')?.addEventListener('click', () => this.showHint())
   }
@@ -127,7 +120,22 @@ export class Game24 {
     this.roundStartTime = Date.now() // Reset round timer only
     this.selectedCard = null
     this.pendingOperation = null
-    this.gameHistory = []
+    this.score = 0 // Reset streak to 0
+    this.level = 0
+    this.updateUI()
+  }
+
+  private resetRound(): void {
+    // Reset the current round to the beginning with original numbers
+    this.cards = this.numbers.map((num, index) => ({
+      value: num,
+      expression: num.toString(),
+      isResult: false,
+      position: index
+    }))
+    this.selectedCard = null
+    this.pendingOperation = null
+    this.roundStartTime = Date.now() // Reset round timer
     this.updateUI()
   }
 
@@ -151,26 +159,6 @@ export class Game24 {
       isResult: false,
       position: index
     }))
-  }
-
-  private saveGameState(): void {
-    this.gameHistory.push({
-      cards: JSON.parse(JSON.stringify(this.cards)),
-      selectedCard: this.selectedCard,
-      pendingOperation: this.pendingOperation
-    })
-  }
-
-  private undoLastOperation(): void {
-    if (this.gameHistory.length === 0) return
-    
-    const lastState = this.gameHistory.pop()
-    if (lastState) {
-      this.cards = lastState.cards
-      this.selectedCard = lastState.selectedCard
-      this.pendingOperation = lastState.pendingOperation
-      this.updateUI()
-    }
   }
 
   private selectCard(index: number): void {
@@ -201,9 +189,6 @@ export class Game24 {
 
   private performOperation(secondCardIndex: number): void {
     if (this.selectedCard === null || this.pendingOperation === null) return
-    
-    // Save state before operation
-    this.saveGameState()
     
     const firstCard = this.cards[this.selectedCard]
     const secondCard = this.cards[secondCardIndex]
@@ -371,10 +356,10 @@ export class Game24 {
       scoreDisplay.textContent = this.score.toString()
     }
 
-    // Update undo button state
-    const undoBtn = document.getElementById('undo-btn')
-    if (undoBtn) {
-      undoBtn.classList.toggle('disabled', this.gameHistory.length === 0)
+    // Update reset button state - always enabled since it resets to beginning
+    const resetBtn = document.getElementById('reset-btn')
+    if (resetBtn) {
+      resetBtn.classList.remove('disabled')
     }
   }
 
