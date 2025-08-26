@@ -34,6 +34,7 @@ export class Game24 {
 
   init(): void {
     this.createUI()
+    this.gameStartTime = Date.now() // Set total timer start time on page load
     this.newGame()
     this.startTimer()
   }
@@ -50,7 +51,6 @@ export class Game24 {
             <!-- Left Icons -->
             <div class="flex flex-col gap-2">
               <button class="header-icon">🏠</button>
-              <button class="header-icon">🏁</button>
             </div>
             
             <!-- Center - Streak -->
@@ -58,11 +58,6 @@ export class Game24 {
               <div class="text-white text-lg font-semibold">Streak</div>
               <div class="bg-gray-800 rounded-lg px-4 py-2 mt-1">
                 <div class="text-white text-2xl font-bold">${this.score}</div>
-                <div class="flex justify-center mt-1">
-                  <span class="star">⭐</span>
-                  <span class="star">⭐</span>
-                  <span class="star">⭐</span>
-                </div>
               </div>
             </div>
             
@@ -129,8 +124,7 @@ export class Game24 {
   private newGame(): void {
     this.generateNumbers()
     this.isGameActive = true
-    this.gameStartTime = Date.now()
-    this.roundStartTime = Date.now()
+    this.roundStartTime = Date.now() // Reset round timer only
     this.selectedCard = null
     this.pendingOperation = null
     this.gameHistory = []
@@ -276,9 +270,8 @@ export class Game24 {
   }
 
   private handleWin(): void {
-    this.score += 100
-    this.level = Math.floor(this.score / 100) + 1
-    this.updateStars()
+    this.score += 1 // 1 point per round instead of 100
+    this.level = this.score // Level equals score now
     // Auto-start new game after a brief delay
     setTimeout(() => this.newGame(), 1000)
   }
@@ -286,25 +279,9 @@ export class Game24 {
   private handleLoss(): void {
     // Reset score on loss (streak-based scoring)
     this.score = 0
-    this.level = 1
-    this.updateStars()
+    this.level = 0
     // Auto-start new game after a brief delay
     setTimeout(() => this.newGame(), 1000)
-  }
-
-  private updateStars(): void {
-    const stars = document.querySelectorAll('.star')
-    const starCount = Math.min(3, Math.floor(this.score / 100))
-    
-    stars.forEach((star, index) => {
-      if (index < starCount) {
-        star.textContent = '⭐'
-        star.classList.add('text-yellow-400')
-      } else {
-        star.textContent = '☆'
-        star.classList.remove('text-yellow-400')
-      }
-    })
   }
 
   private resetSelection(): void {
