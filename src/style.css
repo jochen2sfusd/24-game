@@ -31,6 +31,11 @@
            border-yellow-300 shadow-xl transform scale-110 ring-4 ring-yellow-200;
   }
   
+  .number-card.pending {
+    @apply bg-gradient-to-br from-orange-400 to-orange-500 
+           border-orange-300 shadow-xl transform scale-110 ring-4 ring-orange-200 animate-pulse;
+  }
+  
   .number-card.result {
     @apply bg-gradient-to-br from-purple-500 to-purple-600 
            border-purple-400 shadow-xl;
@@ -65,6 +70,11 @@
   
   .operator-card:active {
     @apply transform scale-95;
+  }
+  
+  .operator-card.selected {
+    @apply bg-gradient-to-br from-orange-400 to-orange-500 
+           border-orange-300 shadow-xl transform scale-110 ring-4 ring-orange-200;
   }
   
   /* Action Buttons */

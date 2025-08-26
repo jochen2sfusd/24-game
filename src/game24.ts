@@ -9,13 +9,13 @@ interface Card {
 export class Game24 {
   private numbers: number[] = []
   private cards: Card[] = []
-  private selectedCards: number[] = []
+  private selectedCard: number | null = null
+  private pendingOperation: string | null = null
   private score: number = 0
   private timeElapsed: number = 0
   private gameStartTime: number = 0
   private isGameActive: boolean = false
   private solver: Solver24
-  private currentStep: 'card' | 'operator' = 'card'
 
   constructor() {
     this.solver = new Solver24()
@@ -86,7 +86,7 @@ export class Game24 {
           <div class="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-200">
             <h3 class="font-semibold text-blue-800 mb-2">How to Play:</h3>
             <p class="text-blue-700 text-sm">
-              Click two cards, then an operator to combine them. Keep combining until you have one card with value 24!
+              Click a number, then an operator, then another number to combine them. Keep combining until you have one card with value 24!
             </p>
           </div>
         </div>
@@ -114,6 +114,8 @@ export class Game24 {
     this.generateNumbers()
     this.isGameActive = true
     this.gameStartTime = Date.now()
+    this.selectedCard = null
+    this.pendingOperation = null
     this.updateUI()
   }
 
@@ -139,52 +141,55 @@ export class Game24 {
   }
 
   private selectCard(index: number): void {
-    if (this.currentStep !== 'card') return
-    
-    // Toggle selection
-    const cardIndex = this.selectedCards.indexOf(index)
-    if (cardIndex > -1) {
-      this.selectedCards.splice(cardIndex, 1)
-    } else {
-      if (this.selectedCards.length < 2) {
-        this.selectedCards.push(index)
-      }
+    // If we have a pending operation, this is the second number
+    if (this.pendingOperation !== null) {
+      this.performOperation(index)
+      return
     }
     
+    // Otherwise, this is the first number selection
+    this.selectedCard = index
     this.updateUI()
   }
 
   private addOperator(op: string): void {
-    if (this.selectedCards.length !== 2) return
+    if (this.selectedCard === null) return
     
-    const [index1, index2] = this.selectedCards
-    const card1 = this.cards[index1]
-    const card2 = this.cards[index2]
+    this.pendingOperation = op
+    this.updateUI()
+  }
+
+  private performOperation(secondCardIndex: number): void {
+    if (this.selectedCard === null || this.pendingOperation === null) return
+    
+    const firstCard = this.cards[this.selectedCard]
+    const secondCard = this.cards[secondCardIndex]
     
     try {
       let result: number
       let expression: string
       
-      switch (op) {
+      switch (this.pendingOperation) {
         case '+':
-          result = card1.value + card2.value
-          expression = `(${card1.expression} + ${card2.expression})`
+          result = firstCard.value + secondCard.value
+          expression = `(${firstCard.expression} + ${secondCard.expression})`
           break
         case '-':
-          result = card1.value - card2.value
-          expression = `(${card1.expression} - ${card2.expression})`
+          result = firstCard.value - secondCard.value
+          expression = `(${firstCard.expression} - ${secondCard.expression})`
           break
         case '*':
-          result = card1.value * card2.value
-          expression = `(${card1.expression} × ${card2.expression})`
+          result = firstCard.value * secondCard.value
+          expression = `(${firstCard.expression} × ${secondCard.expression})`
           break
         case '/':
-          if (card2.value === 0) {
+          if (secondCard.value === 0) {
             this.showResult('❌ Cannot divide by zero!', 'error')
+            this.resetSelection()
             return
           }
-          result = card1.value / card2.value
-          expression = `(${card1.expression} ÷ ${card2.expression})`
+          result = firstCard.value / secondCard.value
+          expression = `(${firstCard.expression} ÷ ${secondCard.expression})`
           break
         default:
           return
@@ -198,11 +203,12 @@ export class Game24 {
       }
       
       // Remove the two selected cards and add the result
-      this.cards = this.cards.filter((_, i) => !this.selectedCards.includes(i))
+      this.cards = this.cards.filter((_, i) => i !== this.selectedCard && i !== secondCardIndex)
       this.cards.push(resultCard)
       
-      // Clear selection
-      this.selectedCards = []
+      // Keep the result card selected
+      this.selectedCard = this.cards.length - 1
+      this.pendingOperation = null
       
       // Check for win condition
       if (this.cards.length === 1 && Math.abs(this.cards[0].value - 24) < 0.001) {
@@ -218,7 +224,14 @@ export class Game24 {
       
     } catch (error) {
       this.showResult('❌ Invalid operation', 'error')
+      this.resetSelection()
     }
+  }
+
+  private resetSelection(): void {
+    this.selectedCard = null
+    this.pendingOperation = null
+    this.updateUI()
   }
 
   private showHint(): void {
@@ -255,12 +268,14 @@ export class Game24 {
     const cardsContainer = document.getElementById('cards-container')
     if (cardsContainer) {
       cardsContainer.innerHTML = this.cards.map((card, index) => {
-        const isSelected = this.selectedCards.includes(index)
+        const isSelected = this.selectedCard === index
         const isResult = card.isResult
+        const isPending = this.pendingOperation !== null && this.selectedCard === index
         
         let cardClass = 'number-card'
         if (isSelected) cardClass += ' selected'
         if (isResult) cardClass += ' result'
+        if (isPending) cardClass += ' pending'
         
         return `
           <button class="${cardClass}" 
@@ -273,6 +288,16 @@ export class Game24 {
         `
       }).join('')
     }
+
+    // Update operator buttons
+    document.querySelectorAll('[data-op]').forEach(button => {
+      const op = (button as HTMLElement).getAttribute('data-op')
+      if (this.pendingOperation === op) {
+        button.classList.add('selected')
+      } else {
+        button.classList.remove('selected')
+      }
+    })
 
     // Update score
     const scoreEl = document.getElementById('score')
