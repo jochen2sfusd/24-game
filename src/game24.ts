@@ -4,6 +4,7 @@ interface Card {
   value: number
   expression: string
   isResult: boolean
+  position: number // Track original position
 }
 
 interface GameHistory {
@@ -69,9 +70,9 @@ export class Game24 {
             <button id="undo-btn" class="header-icon text-2xl">↶</button>
           </div>
 
-          <!-- Game Board Section -->
-          <div class="grid grid-cols-2 gap-4 mb-6" id="cards-container">
-            <!-- Cards will be inserted here -->
+          <!-- Game Board Section - Fixed 2x2 grid -->
+          <div class="game-board mb-6" id="cards-container">
+            <!-- Cards will be inserted here in fixed positions -->
           </div>
 
           <!-- Operator Section -->
@@ -149,11 +150,12 @@ export class Game24 {
       this.numbers = [4, 6, 8, 1] // Known solvable
     }
 
-    // Initialize cards
-    this.cards = this.numbers.map(num => ({
+    // Initialize cards with positions
+    this.cards = this.numbers.map((num, index) => ({
       value: num,
       expression: num.toString(),
-      isResult: false
+      isResult: false,
+      position: index
     }))
   }
 
@@ -178,6 +180,13 @@ export class Game24 {
   }
 
   private selectCard(index: number): void {
+    // If clicking the same card that's already selected, deselect it
+    if (this.selectedCard === index && this.pendingOperation === null) {
+      this.selectedCard = null
+      this.updateUI()
+      return
+    }
+    
     // If we have a pending operation, this is the second number
     if (this.pendingOperation !== null) {
       this.performOperation(index)
@@ -235,11 +244,12 @@ export class Game24 {
           return
       }
       
-      // Create new result card
+      // Create new result card with the position of the second card
       const resultCard: Card = {
         value: result,
         expression: expression,
-        isResult: true
+        isResult: true,
+        position: secondCard.position
       }
       
       // Remove the two selected cards and add the result
@@ -331,13 +341,25 @@ export class Game24 {
   }
 
   private updateUI(): void {
-    // Update cards display
+    // Update cards display with fixed positions
     const cardsContainer = document.getElementById('cards-container')
     if (cardsContainer) {
-      cardsContainer.innerHTML = this.cards.map((card, index) => {
-        const isSelected = this.selectedCard === index
+      // Create a fixed 2x2 grid with 4 positions
+      const positions = [0, 1, 2, 3] // top-left, top-right, bottom-left, bottom-right
+      
+      cardsContainer.innerHTML = positions.map(pos => {
+        // Find card at this position
+        const cardIndex = this.cards.findIndex(card => card.position === pos)
+        
+        if (cardIndex === -1) {
+          // Empty position
+          return `<div class="game-card empty"></div>`
+        }
+        
+        const card = this.cards[cardIndex]
+        const isSelected = this.selectedCard === cardIndex
         const isResult = card.isResult
-        const isPending = this.pendingOperation !== null && this.selectedCard === index
+        const isPending = this.pendingOperation !== null && this.selectedCard === cardIndex
         
         let cardClass = 'game-card'
         if (isSelected) cardClass += ' selected'
@@ -346,7 +368,7 @@ export class Game24 {
         
         return `
           <button class="${cardClass}" 
-                  onclick="window.game24.selectCard(${index})">
+                  onclick="window.game24.selectCard(${cardIndex})">
             <div class="card-content">
               <span class="card-number">${card.value}</span>
               ${isResult ? '<div class="card-expression">' + card.expression + '</div>' : ''}

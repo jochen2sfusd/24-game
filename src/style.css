@@ -20,12 +20,29 @@
            disabled:opacity-50 disabled:cursor-not-allowed;
   }
   
-  /* Game Cards - Red squares like in the image */
+  /* Game Board - Fixed 2x2 grid with no gaps */
+  .game-board {
+    @apply grid grid-cols-2 w-48 h-48 mx-auto;
+    gap: 0; /* No gaps between tiles */
+  }
+  
+  /* Game Cards - Red squares like in the image, flush together */
   .game-card {
-    @apply w-24 h-24 bg-red-500 rounded-lg text-white font-bold text-3xl 
+    @apply w-24 h-24 bg-red-500 text-white font-bold text-3xl 
            shadow-lg hover:shadow-xl transition-all duration-300 
            transform hover:scale-105 active:scale-95 cursor-pointer 
            flex items-center justify-center border-2 border-red-400;
+    border-radius: 0; /* Square tiles with no rounded corners */
+  }
+  
+  /* Empty positions - invisible but maintain grid structure */
+  .game-card.empty {
+    @apply bg-transparent border-transparent shadow-none cursor-default;
+    pointer-events: none;
+  }
+  
+  .game-card.empty:hover {
+    @apply transform-none shadow-none;
   }
   
   .game-card.selected {
@@ -132,6 +149,10 @@
   
   /* Responsive Design */
   @media (max-width: 640px) {
+    .game-board {
+      @apply w-40 h-40;
+    }
+    
     .game-card {
       @apply w-20 h-20 text-2xl;
     }
