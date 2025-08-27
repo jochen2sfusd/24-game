@@ -136,7 +136,7 @@ export class Game24 {
     }))
     this.selectedCard = null
     this.pendingOperation = null
-    this.roundStartTime = Date.now() // Reset round timer only
+    // Don't reset round timer - keep the current round time
     this.updateUI()
   }
 
